@@ -28,4 +28,14 @@ class Device extends Model
     {
         return $this->belongsTo(jenisDevice::class);
     }
+
+    public function history()
+    {
+        return $this->hasMany(History::class);
+    }
+
+    public function ruangan()
+    {
+        return $this->belongsTo(Ruangan::class);
+    }
 }

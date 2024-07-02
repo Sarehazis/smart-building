@@ -12,23 +12,28 @@ use App\Http\Controllers\Api\RfidController as ApiRfidController;
 use App\Http\Controllers\Api\RolesController;
 use App\Http\Controllers\Api\RuanganController as ApiRuanganController;
 use App\Http\Controllers\Api\SettingRolesController;
+use App\Http\Controllers\Api\UsersController;
 use App\Http\Middleware\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+
 
 // Yang belum login
 Route::post('/login', [AuthController::class, 'login']);
 
-// Get Status Lampu
-Route::get('/status-lampu/{macAddress}', [ApiDeviceController::class, 'getStatusLampu']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', [UsersController::class, 'index']);
+});
+
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/search-user', [AuthController::class, 'search']);
+    Route::post('device_cekrfid_mac_address', [ApiDeviceController::class, 'cekRfid']);
+    Route::get('/status-lampu/{macAddress}', [ApiDeviceController::class, 'getStatusLampu']);
+    // Route updateRuangan
+    Route::post('device/{id}/ruangan', [ApiDeviceController::class, 'updateRuangan']);
 });
 
 
@@ -50,6 +55,7 @@ Route::group(['middleware' => 'auth:sanctum', 'isAdmin', 'prefix' => 'admin'], f
     Route::post('device/{id}/suhu', [ApiDeviceController::class, 'updateSuhu']);
     Route::post('device/{id}/status', [ApiDeviceController::class, 'updateStatus']);
     Route::post('device/{id}/suhurange', [ApiDeviceController::class, 'updateSuhuRange']);
+    // Cek Rfid
 
     // Route CategoryDeviceController 
     Route::resource('category_device', CategoryDeviceController::class);
@@ -65,9 +71,6 @@ Route::group(['middleware' => 'auth:sanctum', 'isAdmin', 'prefix' => 'admin'], f
 
     // Route rfID
     Route::resource('rfid', ApiRfidController::class);
-
-    // Route CategoryDevice
-    Route::resource('category_device', CategoryDeviceController::class);
 
     // Route History
     Route::resource('history', HistoryController::class);

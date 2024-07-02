@@ -28,4 +28,9 @@ class Ruangan extends Model
     {
         return $this->belongsTo(Perusahaan::class);
     }
+
+    public function aksesRoles()
+    {
+        return $this->hasMany(AksesRoles::class);
+    }
 }

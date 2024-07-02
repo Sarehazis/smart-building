@@ -3,7 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AksesRoles;
 use App\Models\Device;
+use App\Models\History;
+use App\Models\Perusahaan;
+use App\Models\Rfid;
+use App\Models\SettingRoles;
+use App\Models\User;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -144,11 +151,13 @@ class DeviceController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'status' => 'required|nullable',
+            'perusahaan_id' => 'required'
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
+
 
         $device = Device::find($id);
         if (!$device) {
@@ -158,11 +167,44 @@ class DeviceController extends Controller
         $device->update(['status' => $request->status]);
         $device->save();
 
+        // Find last device_id
+        $lastDevice = History::where('device_id', $device->id)->latest()->first();
+
+        $time = 0;
+        $harga = 0;
+
+
+        // Check if there is a previous record
+        if (!$lastDevice) {
+            $time = 0;
+        } else {
+            $time = $lastDevice->created_at->diffInMinutes(Carbon::now());
+
+            $hargaMenit  = $device->watt / 1000 / 60 * $time;
+            // Ambil data perusahaan
+            $perusahaan = Perusahaan::find($request->perusahaan_id);
+
+            $harga = $hargaMenit * $perusahaan->harga_kwh;
+        }
+
+        // History
+        $history = History::create([
+            'users_id' => auth()->user()->id,
+            'device_id' => $device->id,
+            'status' => $request->status,
+            'waktu' => $time,
+            'harga' => $harga
+        ]);
+
         return response()->json([
             'message' => 'Status berhasil diupdate',
+            'time' => $time,
+            'harga_menit' => $hargaMenit,
+            'harga' => $harga,
             'data' => $device,
         ], 200);
     }
+
 
     // Update min_suhu dan max_suhu
     public function updateSuhuRange(Request $request, $id)
@@ -226,5 +268,89 @@ class DeviceController extends Controller
 
         // Jika perangkat tidak ditemukan, kembalikan pesan error
         return response()->json(['message' => 'Device not found'], 404);
+    }
+
+    public function cekRfid(Request $request)
+    {
+        $request->validate([
+            'uid' => 'required|string',
+            'mac_address' => 'required|string'
+        ]);
+
+        $uid = $request->input('uid');
+
+        $rfid = Rfid::where('rfid', $uid)->first();
+        if ($rfid == null) {
+            return response()->json(['message' => 'Rfid tidak ditemukan'], 404);
+        }
+
+        $user = User::where('id', $rfid->users_id)->first();
+        if ($user == null) {
+            return response()->json(['message' => 'User tidak ditemukan'], 404);
+        }
+
+        $setting_role = SettingRoles::where('users_id', $user->id)->get();
+        if ($setting_role == null) {
+            return response()->json(['message' => 'Role tidak ditemukan'], 404);
+        }
+
+        // Check Device
+        $device = Device::where('mac_address', $request->mac_address)->first();
+        if ($device == null) {
+            return response()->json(['message' => 'Device tidak ditemukan'], 404);
+        }
+
+        $aksesMessage = 'Akses tidak diterima';
+
+        foreach ($setting_role as $key => $value) {
+            $akses = AksesRoles::where('roles_id', $value->roles_id)->where('ruangan_id', $device->ruangan_id)->first();
+            if ($akses != null) {
+                $aksesMessage = 'Akses diterima';
+            } else {
+                $aksesMessage = 'Akses tidak diterima dari foreach';
+            }
+        }
+
+
+
+        // Assuming `device` has `ruangan_id` relationship
+        // $aksesRoles = AksesRoles::where('roles_id', $setting_role->roles_id)
+        //     ->where('ruangan_id', $device->ruangan_id)
+        //     ->first();
+
+        // if ($aksesRoles == null) {
+        //     return response()->json(['message' => 'Akses tidak diterima'], 403);
+        // }
+
+        $history = History::create([
+            'users_id' => $user->id,
+            'device_id' => $device->id,
+            'status' => 1,
+            'waktu' => 0,
+            'harga' => 0,
+        ]);
+
+
+        $history->save();
+
+
+        return response()->json(['message' => $aksesMessage]);
+    }
+
+
+    public function updateRuangan(Request $request, $id)
+    {
+        try {
+
+            $device = Device::find($id);
+            $device->update(['ruangan_id' => $request->ruangan_id]);
+            $device->save();
+            return response()->json([
+                'message' => 'Ruangan berhasil diupdate',
+                'data' => $device,
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json(['message' => 'Ruangan gagal diupdate'], 500);
+        }
     }
 }

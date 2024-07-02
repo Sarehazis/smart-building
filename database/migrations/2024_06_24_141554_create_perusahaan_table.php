@@ -17,6 +17,8 @@ return new class extends Migration
             $table->text('deskripsi');
             $table->text('lokasi');
             $table->string('image')->nullable();
+            $table->integer('kwh');
+            $table->integer('harga_kwh');
             $table->timestamps();
         });
     }

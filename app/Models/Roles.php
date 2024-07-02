@@ -12,4 +12,9 @@ class Roles extends Model
 
     protected $table = 'roles';
     protected $fillable = ['nama_role'];
+
+    public function SettingRoles()
+    {
+        return $this->hasMany(SettingRoles::class);
+    }
 }

@@ -12,7 +12,21 @@ class History extends Model
 
     protected $table = 'history';
     protected $fillable = [
+        'users_id',
+        'device_id',
         'status',
+        'waktu',
         'deskripsi',
+        'harga',
     ];
+
+    public function User()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function Device()
+    {
+        return $this->belongsTo(Device::class);
+    }
 }

@@ -16,6 +16,8 @@ class Perusahaan extends Model
         'deskripsi',
         'lokasi',
         'image',
+        'kwh',
+        'harga_kwh'
     ];
 
     public function ruangan()

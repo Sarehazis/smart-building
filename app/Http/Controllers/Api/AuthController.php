@@ -12,24 +12,6 @@ use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
-    public function user()
-    {
-        try {
-            $data = Auth::user();
-            $response = [
-                'success' => true,
-                'data' => $data,
-                'message' => 'Data user tersedia',
-            ];
-            return response()->json($response, 200);
-        } catch (Exception $th) {
-            $response = [
-                'success' => false,
-                'message' => $th,
-            ];
-            return response()->json($response, 500);
-        }
-    }
 
     public function search(Request $request)
     {

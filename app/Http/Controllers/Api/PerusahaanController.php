@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\History;
 use App\Models\Perusahaan;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -40,7 +43,9 @@ class PerusahaanController extends Controller
             'nama' => 'required|string|max:255|unique:perusahaan',
             'deskripsi' => 'required',
             'lokasi' => 'required',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'kwh' => 'required',
+            'harga_kwh' => 'required'
         ]);
 
         // Cek validasi jika validasi diatas gagal
@@ -66,7 +71,9 @@ class PerusahaanController extends Controller
             'nama' => $request->nama,
             'deskripsi' => $request->deskripsi,
             'lokasi' => $request->lokasi,
-            'image' => $url
+            'image' => $url,
+            'kwh' => $request->kwh,
+            'harga_kwh' => $request->harga_kwh
         ]);
 
         return response()->json([
@@ -82,7 +89,18 @@ class PerusahaanController extends Controller
     public function show($id)
     {
         try {
-            $data = Perusahaan::where('id', $id)->with('gedung.lantai.ruangan.device.jenis_device', 'ruangan.device.jenis_device')->first();
+            $data = Perusahaan::where('id', $id)
+                ->with([
+                    'gedung.lantai.ruangan.device.jenis_device', 'gedung.lantai.ruangan.device.history' => function ($query) {
+                        $query->whereDate('created_at', Carbon::today());
+                    },
+                    'ruangan.device.jenis_device',
+                    'ruangan.device.history' => function ($query) {
+                        $query->whereDate('created_at', Carbon::today());
+                    }
+                ])
+                ->first();
+
             $response = [
                 'success' => true,
                 'data' => $data,
@@ -92,24 +110,17 @@ class PerusahaanController extends Controller
         } catch (Exception $th) {
             $response = [
                 'success' => false,
-                'message' => $th,
+                'message' => $th->getMessage(),
             ];
             return response()->json($response, 500);
         }
     }
 
+
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Perusahaan $perusahaan)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Perusahaan $perusahaan)
     {
         //
     }

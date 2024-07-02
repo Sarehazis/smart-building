@@ -14,13 +14,15 @@ return new class extends Migration
         Schema::create('history', function (Blueprint $table) {
             $table->id();
             $table->foreignId('users_id');
-            $table->foreignId('setting_ruangan_device_id');
+            $table->foreignId('device_id');
             $table->boolean('status');
+            $table->integer('waktu')->default(0);
+            $table->double('harga');
             $table->text('deskripsi');
             $table->timestamps();
 
             $table->foreign('users_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
-            $table->foreign('setting_ruangan_device_id')->references('id')->on('setting_ruangan_device')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreign('device_id')->references('id')->on('device')->onDelete('cascade')->onUpdate('cascade');
         });
     }
 

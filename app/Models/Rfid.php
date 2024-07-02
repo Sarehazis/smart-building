@@ -14,4 +14,9 @@ class Rfid extends Model
         'users_id',
         'rfid',
     ];
+
+    public function User()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
