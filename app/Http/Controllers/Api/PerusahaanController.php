@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -40,7 +41,7 @@ class PerusahaanController extends Controller
     {
         // Validasi Rules
         $validator = Validator::make($request->all(), [
-            'nama' => 'required|string|max:255|unique:perusahaan',
+            'nama' => 'required|string|max:255',
             'deskripsi' => 'required',
             'lokasi' => 'required',
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -53,27 +54,19 @@ class PerusahaanController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
-        // // Simpan image
-        // $file = $request->file('image');
-        // $path = $file->storeAs('perusahaan-image', $file->hashName(), 'public');
-
         // Simpan image
-        $url = null;
-        if ($request->image != null) {
-            $n = str_replace(' ', '-', $request->image);
+        $file = $request->file('image');
+        $path = $file->store('images', 'public');
+        $url = Storage::url($path);
 
-            $file = $request->file('image');
-            $path = $file->store('images', 'public');
-            $url = Storage::url($path);
-        }
-        // Create perusahaan
+        // Buat Perusahaan 
         $perusahaan = Perusahaan::create([
             'nama' => $request->nama,
             'deskripsi' => $request->deskripsi,
             'lokasi' => $request->lokasi,
-            'image' => $url,
             'kwh' => $request->kwh,
-            'harga_kwh' => $request->harga_kwh
+            'harga_kwh' => $request->harga_kwh,
+            'image' => $url
         ]);
 
         return response()->json([
@@ -82,6 +75,7 @@ class PerusahaanController extends Controller
             'data' => $perusahaan
         ]);
     }
+
 
     /**
      * Display the specified resource.
@@ -117,11 +111,54 @@ class PerusahaanController extends Controller
     }
 
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Perusahaan $perusahaan)
+    public function update(Request $request, $id)
     {
-        //
+        try {
+            $validator = Validator::make($request->all(), [
+                'nama' => 'required|string|max:255',
+                'deskripsi' => 'required',
+                'lokasi' => 'required',
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'kwh' => 'required',
+                'harga_kwh' => 'required'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json($validator->errors());
+            }
+
+            $url = null;
+            if ($request->image != null) {
+                $n = str_replace(' ', '-', $request->image);
+
+                $file = $request->file('image');
+                $path = $file->store('images', 'public');
+                $url = Storage::url($path);
+            }
+
+            $data = Perusahaan::find($id);
+            $data->nama = $request->nama;
+            $data->deskripsi = $request->deskripsi;
+            $data->lokasi = $request->lokasi;
+            $data->image = $url;
+            $data->kwh = $request->kwh;
+            $data->harga_kwh = $request->harga_kwh;
+
+            $data->save();
+
+            $response = [
+                'success' => true,
+                'data' => $data,
+                'message' => 'Data Perusahaan berhasil di ubah pada smart laundry',
+            ];
+
+            return response()->json($response, 200);
+        } catch (Exception $th) {
+            $response = [
+                'success' => false,
+                'message' => $th,
+            ];
+            return response()->json($response, 500);
+        }
     }
 }

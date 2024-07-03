@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('url')->nullable();
             $table->foreignId('jenis_device_id');
             $table->foreignId('ruangan_id')->nullable();
-            $table->float('suhu')->nullable();
+            $table->float('suhu')->nullable()->default(0);
             $table->boolean('status')->default(false);
             $table->float('min_suhu')->nullable();
             $table->float('max_suhu')->nullable();

@@ -279,49 +279,43 @@ class DeviceController extends Controller
 
         $uid = $request->input('uid');
 
+        // Pengecekan Rfid
         $rfid = Rfid::where('rfid', $uid)->first();
         if ($rfid == null) {
             return response()->json(['message' => 'Rfid tidak ditemukan'], 404);
         }
 
-        $user = User::where('id', $rfid->users_id)->first();
+        // Pengecekan User
+        $user = User::find($rfid->users_id);
         if ($user == null) {
             return response()->json(['message' => 'User tidak ditemukan'], 404);
         }
 
-        $setting_role = SettingRoles::where('users_id', $user->id)->get();
-        if ($setting_role == null) {
+        // Pengecekan Role
+        $setting_roles = SettingRoles::where('users_id', $user->id)->pluck('roles_id');
+        if ($setting_roles->isEmpty()) {
             return response()->json(['message' => 'Role tidak ditemukan'], 404);
         }
 
-        // Check Device
+        // Pengecekan Device
         $device = Device::where('mac_address', $request->mac_address)->first();
         if ($device == null) {
             return response()->json(['message' => 'Device tidak ditemukan'], 404);
         }
 
-        $aksesMessage = 'Akses tidak diterima';
+        // Pengecekan Akses
+        $akses = AksesRoles::whereIn('roles_id', $setting_roles)
+            ->where('ruangan_id', $device->ruangan_id)
+            ->first();
 
-        foreach ($setting_role as $key => $value) {
-            $akses = AksesRoles::where('roles_id', $value->roles_id)->where('ruangan_id', $device->ruangan_id)->first();
-            if ($akses != null) {
-                $aksesMessage = 'Akses diterima';
-            } else {
-                $aksesMessage = 'Akses tidak diterima dari foreach';
-            }
+        if (!$akses) {
+            return response()->json([
+                'message' => 'Akses tidak diterima',
+                'akses_data' => 'Tidak ada akses yang ditemukan untuk ruangan ini'
+            ], 403);
         }
 
-
-
-        // Assuming `device` has `ruangan_id` relationship
-        // $aksesRoles = AksesRoles::where('roles_id', $setting_role->roles_id)
-        //     ->where('ruangan_id', $device->ruangan_id)
-        //     ->first();
-
-        // if ($aksesRoles == null) {
-        //     return response()->json(['message' => 'Akses tidak diterima'], 403);
-        // }
-
+        // Membuat History
         $history = History::create([
             'users_id' => $user->id,
             'device_id' => $device->id,
@@ -330,13 +324,11 @@ class DeviceController extends Controller
             'harga' => 0,
         ]);
 
-
-        $history->save();
-
-
-        return response()->json(['message' => $aksesMessage]);
+        return response()->json([
+            'message' => 'Akses diterima',
+            'akses_data' => $akses
+        ]);
     }
-
 
     public function updateRuangan(Request $request, $id)
     {
@@ -352,5 +344,16 @@ class DeviceController extends Controller
         } catch (Exception $e) {
             return response()->json(['message' => 'Ruangan gagal diupdate'], 500);
         }
+    }
+
+    public function getMacAddress(Request $macAddress)
+    {
+        $device = Device::where('mac_address', $macAddress->mac_address)->with('jenis_device')->first();
+        $response = [
+            'success' => true,
+            'data' => $device,
+            'message' => 'Data Mac Address tersedia',
+        ];
+        return response()->json($response, 200);
     }
 }

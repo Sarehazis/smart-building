@@ -30,16 +30,20 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/search-user', [AuthController::class, 'search']);
+    Route::post('device/{id}/suhu', [ApiDeviceController::class, 'updateSuhu']);
+    Route::post('device/{id}/status', [ApiDeviceController::class, 'updateStatus']);
     Route::post('device_cekrfid_mac_address', [ApiDeviceController::class, 'cekRfid']);
     Route::get('/status-lampu/{macAddress}', [ApiDeviceController::class, 'getStatusLampu']);
-    // Route updateRuangan
-    Route::post('device/{id}/ruangan', [ApiDeviceController::class, 'updateRuangan']);
+    Route::post('device/{id}/suhurange', [ApiDeviceController::class, 'updateSuhuRange']);
 });
 
 
 // Route Middleware Group
 Route::group(['middleware' => 'auth:sanctum', 'isAdmin', 'prefix' => 'admin'], function () {
+    // Update Perusahaan
     Route::resource('roles', RolesController::class);
+    // Route macaddress
+    Route::get('device/{mac_address}/mac_address', [ApiDeviceController::class, 'getMacAddress']);
     // Route Setting Roles
     Route::resource('settings_roles', SettingRolesController::class);
     // Route Perusahaan 
@@ -52,7 +56,7 @@ Route::group(['middleware' => 'auth:sanctum', 'isAdmin', 'prefix' => 'admin'], f
     Route::resource('device', ApiDeviceController::class);
     Route::post('device/{id}', [ApiDeviceController::class, 'update']);
     // Route Update device suhu, status, min_suhu dan max_suhu
-    Route::post('device/{id}/suhu', [ApiDeviceController::class, 'updateSuhu']);
+    Route::post('device/{id}/ruangan', [ApiDeviceController::class, 'updateRuangan']);
     Route::post('device/{id}/status', [ApiDeviceController::class, 'updateStatus']);
     Route::post('device/{id}/suhurange', [ApiDeviceController::class, 'updateSuhuRange']);
     // Cek Rfid

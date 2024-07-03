@@ -98,7 +98,7 @@ class RuanganController extends Controller
      */
     public function update(Request $request, Ruangan $ruangan)
     {
-        //
+        
     }
 
     /**
